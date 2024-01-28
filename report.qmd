@@ -1,0 +1,465 @@
+---
+title: "Exploring Data"
+subtitle: "Transit Data of 59 Countries"
+author: Harshita Bharadwaj
+date: October 17, 2023 
+format:
+  html:
+    toc: true
+    theme: sandstone
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+knitr::opts_chunk$set(
+    warning = FALSE,
+    message = FALSE,
+    fig.path = "figs/", # Folder where rendered plots are saved
+    fig.width = 7.252, # Default plot width
+    fig.height = 4, # Default plot height
+    fig.retina = 3, # For better plot resolution
+    comment = "#>"
+)
+
+# Load libraries
+library(tidyverse)
+library(readxl)
+library(here)
+library(janitor)
+```
+
+# 1. Loading the data
+
+```{r}
+# Write code here
+library(here)
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(janitor)
+path <- here("data","transit_cost.csv")
+transit_dataa <- read_csv(path)
+
+
+
+
+
+```
+
+# 2. Documenting the data
+
+**Data File** - Transit_cost.csv
+
+**Data Downloaded** - October 12 2023
+
+**Description** - The dataset covers transit-infrastructure projects worldwide, spanning 59 countries and 184 cities. It provides detailed data information on construction costs, adjusted for purchasing power parity, and precise corridor lengths measured via satellite imagery, covering over 11,000 kilometers of urban rail constructed since the late 1990s. The dataset aims to discover efficient cost practices applicable to urban rail projects on a global scale.
+
+**Source of downloaded file** - The data is derived from the official platform "https://transitcosts.com/" managed by the global team of researchers at NYU Marron Institute of Urban Management. Financial support from esteemed organizations like Arnold Ventures and Andrew and Carolyn Chatham further validates the project's credibility.
+
+The data obtained from the website is methodically categorized. "Wiki," denoting Wikipedia, was utilized exclusively for gathering information about project length and opening years, not for cost data. "Measured" indicates that lengths, including tunnel measurements, were accurately determined using satellite images and mapping software like Google Earth or Open Railway Map. Comprehensive information from reliable sources like Railway Gazette and official plans from relevant agencies are incorporated.
+
+**Description** -
+
+e - ID
+
+country - Country Code
+
+city - City where transit tunnel is being created
+
+line - Line name or path
+
+start_year - Year started
+
+end_year - Year ended (predicted or actual)
+
+rr - Railroad
+
+length - Length of proposed line in km
+
+tunnel_per - Percent of line length completed
+
+tunnel - Tunnel length of line completed in km
+
+stations - Number of stations where passengers can board/leave
+
+source1 - Where was data sourced
+
+cost - Cost in millions of local currency
+
+currency - Currency type
+
+year - Midpoint year of construction
+
+ppp_rate - Purchasing power parity (PPP), based on the midpoint of construction
+
+real_cost - Real cost in Millions of USD
+
+cost_km_millions - Cost/km in millions of USD
+
+source2 - Where was data sourced for cost
+
+reference - Reference URL for source
+
+**Dataset validity -**The data's trustworthiness is evident from diverse sources, including official plans, media reports, trade publications, and precise measurements from satellite imagery. Notably, Wikipedia was avoided for cost data, highlighting a preference for reliable sources. Data management involved adjusting for purchasing power parity (PPP) for international comparisons, although this adjustment might have limitations in rapidly changing PPP rate countries. Six in-depth case studies are also conducted, exploring unique considerations. The accuracy of the data depends on the credibility of its sources. With a focus on official documents and reputable publications, the authors have likely ensured accuracy within the confines of their sources' limitations. The dataset is also continuously updated as new case studies are completed and additional data is collected.\
+\
+**Possible Limitations** - The transit cost data, though comes with possible limitations. The dataset might have limitations concerning the completeness of data for all projects globally, especially in regions with limited accessibility to official records. Its accuracy hinges on source reliability, which could introduce biases. The dataset lacks clarity on all included data, potentially leading to gaps. Moreover, specific project decision details may be omitted, limiting a holistic view.
+
+# 3. Previewing the data
+
+```{r}
+
+transit_data <- transit_dataa %>% 
+  clean_names()
+
+head(transit_data)
+glimpse(transit_data)
+#View(transit_data)
+summary(transit_data)
+
+#plot
+ggplot(transit_data, aes(x = year, y = cost/10^5)) +
+  geom_point() +
+  labs(x = "Year", y = "Cost (millions of local currency)", title = "Cost of Transit Projects Over Years") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+```
+
+The above scatter plot visualizes the relationship between the cost of transit projects and the years in which these projects were constructed.
+
+```{r}
+library(ggplot2)
+
+ggplot(transit_data, aes(x = start_year, y = length)) +
+  geom_point() +
+  labs(title = "Transit Line Length vs. Start Year",
+       x = "Start Year",
+       y = "Transit Line Length (km)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+\
+
+A scatter plot can be used to visualize the relationship between two numerical variables, such as start_year and length. Each point represents a transit line, and its position on the plot shows its starting year and length.
+
+# 4. Identifying research questions
+
+1.  Question 1 - What are the top 10 countries with the highest number of transit projects, and how do they compare in terms of project count
+2.  Question 2 - Relationship between length and cost per km for top 5 countries
+3.  Question 3 - Which country has constructed the most kilometers of transit
+4.  Question 4 - Which city in a country with highest number of stations has the highest number of transit stations?
+5.  Question 5 - What are the variations in the mean duration required to complete transit projects across different countries, and are there any significant differences in the construction timelines among these countries?
+
+# 5. Exploring the data
+
+Loading necessary libraries:
+
+```{r}
+library(cowplot)
+library(ggplot2)
+library(dplyr)
+library(janitor)
+
+ 
+```
+
+## Exploring Question 1
+
+**What are the top 10 countries with the highest number of transit projects, and how do they compare in terms of project count**\
+\
+
+```{r}
+
+project_counts <- transit_data %>%
+  group_by(country) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%  
+  top_n(10, n)  
+
+
+ggplot(project_counts, aes(y = fct_reorder(country, n), x = n)) +
+  geom_col(fill="darkgrey") +
+  labs(title = "Top 10 Transit Projects by Country", y = "Country", x = "Number of Projects") +
+  scale_x_continuous(
+    expand = expansion(mult = c(0, 0.05))) +
+  theme_minimal_vgrid()
+
+
+
+
+
+
+```
+
+**Graph description** :\
+The graph illustrates the top 10 countries(China , India, Turkey, Japan, France, Spain, United states, Denmark, Taiwan, Italy ) with the most transit projects, showcasing project counts through horizontal bars. Longer bars represent higher project numbers.
+
+**Summary :**
+
+This comprehensive analysis delves into the top 10 countries leading in transit projects, providing valuable insights into global public transportation endeavors. China emerges as a front runner, displaying unparalleled commitment to transit infrastructure expansion, strategically aligned with rapid urbanization and economic growth. India follows, emphasizing transit development to accommodate its densely populated cities and swift urban expansion.
+
+**Noteworthy Disparities and Influencing Factors :**
+
+A notable gap exists between China and other countries, attributed to diverse factors:
+
+-   Urban Transit Influences:\
+    Economic Dynamics, Urbanization, Influence of Policy and Infrastructure of China enables substantial transit investments, driving extensive networks. Government policies, infrastructure challenges, and international collaborations significantly shape transit initiatives, leading to disparities among countries.
+
+-   Data Accuracy and Limitations:\
+    It's crucial to acknowledge potential data discrepancies arising from incomplete data, varied collection methods, and reporting biases. Quality control measures, such as rigorous validation and periodic updates, are imperative to ensure dataset accuracy and reliability.
+
+Following China is India prioritizes transit due to dense urban areas and rapid growth, aiming for efficient mobility, reduced congestion, and sustainable development. Turkey, Japan, France, and Spain demonstrate a mature approach with an emphasis on integrated transport networks. The United States, Denmark, Taiwan, and Italy employ tailored solutions, showcasing adaptability to regional challenges.
+
+The possibility that some countries have fewer transit projects due to their developed status is a significant reflection of their advanced urban infrastructure. Developed countries often establish comprehensive transit networks early in their economic development, leading to a lower frequency of new projects. This phenomenon showcases their matured transit systems, efficient planning, and established public transportation culture.
+
+## Exploring Question 2
+
+**Relationship between length and cost per km for top 5 countries**
+
+```{r}
+
+
+
+grouped_data <- transit_data %>%
+  group_by(country) %>%
+  summarise(mean_cost_per_km = (mean(cost_km_millions))) %>%
+  arrange(desc(mean_cost_per_km)) %>% 
+  top_n(5)  
+
+
+ggplot(grouped_data, aes(x = fct_reorder(country, mean_cost_per_km), y = mean_cost_per_km)) +
+  geom_bar(stat = "identity", fill = "darkgrey") +
+  labs(title = "Top 5 Countries by Average Cost per Kilometer of Transit Projects",
+       x = "Country",
+       y = "Average Cost per Kilometer in millions") +
+scale_y_continuous(labels = scales::dollar_format(scale = 0.001, prefix = "$", suffix = "k"))  +
+  theme_minimal_hgrid()
+```
+
+**Graph description** :
+
+The graph illustrates the average cost per kilometer of transit projects in the top 5 countries (United States, Singapore, New Zeland Quatar, United Kingdom)with the highest expenses. Longer bars indicate significantly higher average costs, reflecting substantial financial investments in transit infrastructure. This reveals notable disparities in project costs between countries, allowing for quick comparisons.
+
+**Summary :**
+
+This research delves into the intricacies of transit project costs, focusing on the top five countries: the United States, Singapore, New Zealand, Qatar, and the United Kingdom. The graph vividly captures the average cost per kilometer in millions of transit projects in these nations, offering a compelling lens to understand the financial landscapes of their transit infrastructures.
+
+**Influencing factors :**
+
+**\
+**The disparities in transit project costs are shaped by economic differences, technological advancements, geographical challenges, and local labor/material costs. Developed economies like the US invest more due to robust finances. Advanced technologies in Singapore raise costs, while unique landscapes in Qatar and New Zealand demand specialized solutions. Variances in local expenses significantly impact project budgets.
+
+**Understanding the Inclusion of these Nations in the Top 5 Tier :**
+
+\
+The United States, Singapore, New Zealand, Qatar, and the United Kingdom emerge as leaders in transit project costs among 59 countries due to a blend of economic, technological, and urban factors.
+
+The United States' high transit project costs stem from factors like elevated labor expenses, stringent safety standards, substantial land acquisition costs, complex infrastructure challenges, adoption of advanced technologies, costly consultancy and design services, rigorous community engagement processes, and large-scale project scopes. Variations exist between states and cities, contributing to diverse project expenses nationwide.
+
+Economically developed, they invest substantially in advanced transit infrastructures, facilitated by their stable financial bases. Incorporating cutting-edge technologies ensures efficiency and safety, but raises project costs. Densely populated cities with high congestion levels demand intricate solutions, while adherence to stringent regulatory standards adds complexity and expenses. Prioritizing citizens' quality of life motivates these nations to invest in efficient public transportation, reducing congestion and enhancing mobility. Additionally, these countries serve as major tourist hubs and global business centers, requiring sophisticated transit systems for global appeal.
+
+**Possible Faults** :\
+Data inconsistencies in transit project datasets can arise due to various factors. These include incomplete data, differences in reporting standards from diverse sources, infrequent updates leading to outdated information, varied project categorization, reporting biases favoring certain regions, lack of quality control, currency conversion discrepancies, and human errors during data entry. To maintain reliability, rigorous validation, cross-referencing with official records, and periodic updates are crucial. Researchers must employ meticulous data cleaning and validation techniques to minimize errors and biases in analyses.
+
+## Exploring Question 3
+
+**Which country has constructed the most kilometers of transit**
+
+```{r}
+total_km_per_country <- transit_data %>%
+  filter(!is.na(real_cost) & !is.na(cost_km_millions)) %>%
+  mutate(real_cost = as.numeric(real_cost),
+         cost_km_millions = as.numeric(cost_km_millions)) %>%
+  group_by(country) %>%
+  summarise(total_km_constructed = sum(real_cost / cost_km_millions, na.rm = TRUE)) %>%
+  arrange(desc(total_km_constructed))
+ 
+
+country_with_most_km <- total_km_per_country[1,]
+ 
+
+print(paste("Country with most kilometers of transit constructed: ", 
+            country_with_most_km$country, 
+            " (", round(country_with_most_km$total_km_constructed, 2), " km)"))
+ 
+
+ggplot(total_km_per_country, aes(x = fct_reorder(country, total_km_constructed), y = total_km_constructed)) +
+  geom_bar(stat = "identity", fill = "darkgrey") +
+  labs(x = "Country", y = "Total Kilometers Constructed", 
+       title = "Total Kilometers of Transit Constructed per Country") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma_format(scale = 0.001, suffix = "k")) +
+    theme_minimal_hgrid()
+
+```
+
+The above plot is very messy and contains data that could be eliminated. considering all the conditions the below graph is plotted that considers countries who's total KM constructed is more than 100 KM
+
+```{r}
+filtered_km_per_country <- total_km_per_country %>%
+  filter(total_km_constructed >= 100)
+
+
+ggplot(filtered_km_per_country, aes(y = fct_reorder(country, total_km_constructed), x = total_km_constructed)) +
+  geom_bar(stat = "identity", fill = "darkgrey") +
+  labs(y = "Country", x = "Total Kilometers Constructed in km", 
+       title = "Total Kilometers of Transit Constructed per Country (Excluding Countries Below 100 km)") +
+  scale_x_continuous(labels = scales::comma_format(scale = 0.001, suffix = "k"))+theme_minimal_vgrid()
+
+
+```
+
+**Graph description** :
+
+The graph displays the total kilometers of transit constructed in various countries, excluding those with less than 100 km of development. A total of 15 countries are represented with China having extensive transit efforts, reflecting significant investments in public transportation networks can also be supported by it leading in number of project taken . Shorter bars highlight regions with limited transit infrastructure or in earlier stages of development.
+
+**Summary :**
+
+This analysis delves into the intricate landscape of global transit infrastructure development, spotlighting countries making significant investments while excluding those with limited progress below 100 km. The report accentuates China's unparalleled leadership in both the number of transit projects and the total constructed kilometers. Following China is India with the second largest in total km's constructed, given it being the second in total number of projects.\
+
+**Gap between China and other countries** :
+
+As discussed earlier, the substantial gap between China's transit infrastructure development and that of the other 15 countries(in this case) can be attributed to a multifaceted interplay of economic prowess, strategic urban planning, and policy initiatives. China's robust economy enables substantial investments in expansive transit networks, supporting rapid urbanization and addressing congestion challenges. Additionally, proactive government policies and a focus on sustainable mobility solutions have accelerated transit projects, setting China apart as a global leader.
+
+However, it's crucial to acknowledge the potential presence of data faults and inconsistencies within the dataset. Incomplete or inaccurate reporting, varying data collection methodologies, and discrepancies in project categorization might distort the comparative analysis. Such data faults can misrepresent the actual progress of transit projects in certain countries, creating an apparent disparity that might not accurately reflect the ground reality.
+
+To bridge this gap and ensuring comprehensive understanding, rigorous validation processes, cross-referencing with official records, and data cleansing techniques are important. Addressing these data faults is vital for an accurate, unbiased evaluation of global transit infrastructure development, enabling informed decision-making and fostering equitable progress across nations.
+
+## Exploring Question 4
+
+**Which city in a country with highest number of stations has the highest number of transit stations?**
+
+```{r}
+country_station_counts <- transit_data %>%
+  group_by(country) %>%
+  summarise(num_stations = n()) %>%
+  arrange(desc(num_stations))  
+
+selected_country <- country_station_counts$country[1]
+
+
+country_data <- transit_data %>%
+  filter(country == selected_country)
+
+
+city_station_counts <- country_data %>%
+  group_by(city) %>%
+  summarise(num_stations = n()) %>%
+  arrange(num_stations)  
+
+city_station_counts$city <- factor(city_station_counts$city, levels = city_station_counts$city)
+
+
+ggplot(city_station_counts, aes(y = city, x = num_stations)) +
+  geom_col(stat = "identity", fill="darkgrey") +
+  labs(title = paste("Number of Stations in Cities of", selected_country),
+       x = "Number of Stations",
+       y = "City")+theme_minimal_vgrid() 
+
+
+```
+
+**Graph description** :
+
+The graph showcases the number of transit stations in cities within China, the country with the highest station count. Notably, Shanghai leads with the most station number, a fact that aligns with its status as the country's capital and a hub of numerous activities. Longer bars represent cities with robust public transportation networks, ensuring efficient commuting and enhanced urban accessibility. Cities with fewer stations might need additional investments to enhance transit accessibility
+
+**Summary :**
+
+In the realm of urban connectivity and transit infrastructure, China emerges as a front runner, with a significant number of transit stations. This analysis delves into the specifics of transit station distribution within Chinese cities, with a focus on understanding the dynamics and implications of this comprehensive network.
+
+**Key Findings :**
+
+Shanghai emerges as the foremost city in China's transit landscape, exhibiting the highest number of stations for passengers to board or leave. As China's economic and financial powerhouse, Shanghai stands as a testament to the country's rapid modernization and urban development efforts. Its strategic location as a major port city and its role as an international financial center have fostered a flourishing economy, attracting businesses, investments, and a diverse population. Consequently, the city's transit network has been meticulously planned and expanded to accommodate the needs of its growing population and burgeoning economic activities. Shanghai's extensive public transportation system not only alleviates congestion but also ensures seamless connectivity, promoting efficient commuting and enhancing overall urban accessibility.
+
+**Possible Faults :**
+
+Possible faults in this visualization could include inaccurate or incomplete data, misrepresentation of station counts due to varied definitions of "transit station," or biases in reporting from different regions. Additionally, the absence of context, such as station density or population served, might limit the comprehensive understanding of transit accessibility in these cities.
+
+## Exploring Question 5
+
+**What are the variations in the mean duration required to complete transit projects across different countries, and are there any significant differences in the construction timelines among these countries?**
+
+```{r}
+
+mean_duration_by_country <- transit_data %>%
+  mutate(duration = (as.numeric(end_year) - as.numeric(start_year))) %>%  
+  group_by(country) %>%  
+  summarise(mean_duration = mean(duration, na.rm = TRUE))  
+
+
+ordered_mean <- mean_duration_by_country[order(-mean_duration_by_country$mean_duration), ]
+
+print(ordered_mean)
+
+View(ordered_mean)
+
+mean_duration_by_country <- transit_data %>%
+  mutate(duration = (as.numeric(end_year) - as.numeric(start_year))) %>% 
+  group_by(country) %>%  
+  summarise(mean_duration = mean(duration, na.rm = TRUE))  
+
+
+
+ggplot(mean_duration_by_country, aes(x = country, y = mean_duration)) +
+  geom_point(color = "black", size = 2) +
+  labs(title = "Mean Duration to Build Transit Projects by Country",
+       x = "Country",
+       y = "Mean Duration (Years)")+
+    theme_minimal()+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+```
+
+**Graph description** :
+
+The scatter plot compares the mean duration of transit projects across 59 different countries. Each point represents a country, indicating the average time, in years, taken to complete projects. Higher points signify longer construction periods. Lower points indicate more efficient project completion. Identifying outliers helps pinpoint countries with notably shorter or longer construction times, offering insights into unique factors impacting project duration.
+
+**Summary :**
+
+This analysis delves into the variations in the mean duration required to complete transit projects across 59 countries, exploring disparities and identifying outliers. By scrutinizing these construction timelines, we gain insights into the factors influencing project efficiency and duration.
+
+The scatter plot vividly illustrates the mean duration of transit projects for each country. Countries like the Netherlands, Qatar, Brazil , New Zealand , Peru and Denmark emerge as leaders with notably longer construction periods. Notable that China with the highest number of project has a mean of about 4 years followed by Panama, Bulgaria, Portugal and Uzbekistan amongst the least means.
+
+**Possible Reasons :**
+
+Strategic planning, Financial Investments, Regulatory Frame work, Technological integration might few reasons. Along with is one of the notable reason might be Terrain challenges. Rugged terrains or geographical obstacles can complicate construction and necessitate specialized engineering solutions. Building transit infrastructure in these areas requires careful consideration of environmental impact, geological stability, and innovative construction techniques to overcome natural barriers. Public acceptance and involvement are crucial for successful transit projects. Ensuring that communities are engaged and supportive of proposed changes can be challenging. Securing adequate funding and allocating resources for transit projects is a perpetual challenge. Economic fluctuations, budget constraints, and competing priorities within national or regional budgets can limit available resources. Accurate and reliable data is the cornerstone of effective transit planning.
+
+## **Log-Log Plot: Length vs. Cost of Transit Lines**
+
+```{r}
+
+transiit_data <- transit_data %>%
+  mutate(real_cost = as.numeric(real_cost, na.rm = TRUE)) %>% 
+  filter(!is.na(real_cost))
+
+
+ggplot(transiit_data, aes(x=length, y=real_cost)) +
+  geom_point()+
+    theme_light()
+
+ggplot(transiit_data, aes(x=log(length), y=log(real_cost))) +
+  geom_point() +
+  labs(title="Log-Log Plot: Length vs Cost",
+       x="Log(Length)", 
+       y="Log(Real Cost)") +
+  theme_light()
+  
+```
+
+**Analysis of Log-Log Plot: Transit Line Length vs. Cost**
+
+**Summary:**
+
+The log-log plot reveals a logarithmic relationship between transit line length and real cost, indicating exponential cost escalation as lines get longer. This non-linear trend underscores the disproportionate rise in expenses for extended transit projects. These findings hold crucial significance for urban planning and financial strategizing.
+
+**Insights:**
+
+Longer transit lines incur exponentially higher costs, demanding prudent financial strategies. Transit planners must anticipate these steep expenses, guiding budgeting and resource allocation. Governments and authorities require innovative funding models to sustain expansive networks, acknowledging the cost escalation. Rigorous feasibility studies, integrating exponential cost scaling, are imperative, ensuring projects align with financial constraints. Careful planning is pivotal in managing the challenges posed by the exponential growth in transit project costs.
+
+**Strategic Approach:**
+
+Recognizing this exponential correlation empowers cities to make informed choices, balancing ambitious transit expansion with fiscal responsibility. Prudent financial planning, effective resource management, and creative funding solutions are vital in navigating the challenges posed by the exponential growth in transit project costs.
